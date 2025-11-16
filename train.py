@@ -106,7 +106,7 @@ def main():
             min_delta=phase1_cfg.get('min_delta', 0.001),
             patience=phase1_cfg.get('early_stopping_patience', 5)
         ),
-        ShowGraphCallback()
+        #ShowGraphCallback()
     ]
 
     # Create learner for Phase 1
@@ -191,7 +191,7 @@ def main():
             min_delta=phase2_cfg.get('min_delta', 0.001),
             patience=phase2_cfg.get('early_stopping_patience', 5)
         ),
-        ShowGraphCallback()
+        #ShowGraphCallback()
     ]
 
     # Create new learner for Phase 2
