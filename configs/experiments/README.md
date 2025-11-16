@@ -60,7 +60,7 @@ memory:
   bank_size: 512
   update_strategy: rarity
   top_k: 3
-  normalize_retrieved: true
+  normalize_retrieved: 'both'
 
 # Data configuration
 data:

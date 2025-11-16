@@ -127,7 +127,7 @@ memory:
   update_strategy: rarity  # or diversity, hybrid, statistical, fifo
   bank_size: 512  # 256, 512, 1024
   top_k: 3  # 1, 3, 5
-  normalize_retrieved: true  # or false
+  normalize_retrieved: 'both'  # or false
 ```
 
 3. Run training:

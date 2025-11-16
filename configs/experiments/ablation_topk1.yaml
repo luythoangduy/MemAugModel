@@ -22,7 +22,7 @@ memory:
   update_strategy: rarity
   rarity_threshold: 0.2
   top_k: 1  # KEY DIFFERENCE: Only 1 retrieved feature
-  normalize_retrieved: true
+  normalize_retrieved: 'both'
   memory_momentum: 0.9
   self_match_threshold: 0.9999
 

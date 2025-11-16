@@ -275,10 +275,16 @@ def create_fastai_learner(
     if mixup:
         learn.add_cb(MixUp())
 
-
-    learn.add_cb(ProgressCallback())
-    learn.add_cb(CSVLogger())
-
+    # Add progress bar and CSV logger (only works in interactive/notebook environment)
+    # Check if running in notebook
+    try:
+        get_ipython().__class__.__name__
+        # Running in IPython/Jupyter
+        learn.add_cb(ProgressCallback())
+        learn.add_cb(CSVLogger())
+    except NameError:
+        # Not in notebook - skip ProgressCallback to avoid display errors
+        pass
 
     print(f"\nLearner created successfully!")
     print(f"  Loss: {loss_type}")

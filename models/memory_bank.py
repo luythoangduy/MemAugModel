@@ -234,8 +234,15 @@ class MemoryBank(nn.Module):
         valid_memory = self.memory[:self.index] if self.index < self.bank_size else self.memory
 
         # Compute cosine similarity (Eq. 5)
-        norm_query = F.normalize(query, dim=1)
-        norm_memory = F.normalize(valid_memory, dim=1)
+        if self.normalize_retrieved == 'query_only':
+            norm_query = F.normalize(query, dim=1)
+            norm_memory = valid_memory
+        elif self.normalize_retrieved == 'memory_only':
+            norm_query = query
+            norm_memory = F.normalize(valid_memory, dim=1)
+        else:  # both or none
+            norm_query = F.normalize(query, dim=1)
+            norm_memory = F.normalize(valid_memory, dim=1)
         similarity = torch.matmul(norm_query, norm_memory.T)
 
         # Avoid self-similarity (similarity = 1.0)
@@ -264,9 +271,9 @@ class MemoryBank(nn.Module):
 
             result[i] = weighted_features
 
-        # Optionally normalize retrieved features
-        if self.normalize_retrieved:
-            result = F.normalize(result, dim=1) * torch.norm(query, dim=1, keepdim=True)
+        # # Optionally normalize retrieved features
+        # if self.normalize_retrieved:
+        #     result = F.normalize(result, dim=1) * torch.norm(query, dim=1, keepdim=True)
 
         return result
 
