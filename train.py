@@ -228,8 +228,8 @@ def main():
     print(f"  Epochs: {epochs}")
     print(f"  LR range: {lr_min} to {lr_max}")
     print(f"  Memory momentum: {phase2_cfg.get('memory_momentum', 0.9999)}")
-
-    learn_phase2.fit_one_cycle(epochs, slice(lr_min, lr_max))
+    with learn_phase2.no_logging():
+        learn_phase2.fit_one_cycle(epochs, slice(lr_min, lr_max))
 
     # Save Phase 2 model
     phase2_save_name = phase2_cfg.get('save_name', 'phase2_model')
