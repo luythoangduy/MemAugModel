@@ -1,15 +1,15 @@
-# Baseline ResNet50 without Memory
+# Baseline EfficientNetV2-S without Memory
 # For comparison with memory-augmented version
 
-experiment_name: baseline_resnet50
-description: "Baseline ResNet50 without memory augmentation"
+experiment_name: baseline_densenet121
+description: "Baseline DenseNet121 without memory augmentation"
 
 # ========================================
 # Model Configuration
 # ========================================
 model:
   num_classes: 14
-  backbone: resnet50
+  backbone: densenet121
   pretrained: true
   dropout_rate: 0.3
 
@@ -29,7 +29,7 @@ data:
   valid_pct: 0.125
 
 # ========================================
-# Training Phase 1
+# Training Phase 1: Abnormal Images Only
 # ========================================
 phase1:
   filter_normal: true
@@ -45,16 +45,16 @@ phase1:
   early_stopping_patience: 5
   save_best: true
   min_delta: 0.0001
-  save_name: baseline_resnet50_phase1
+  save_name: baseline_phase1
 
 # ========================================
-# Training Phase 2
+# Training Phase 2: All Images
 # ========================================
 phase2:
   filter_normal: false
   batch_size: 64
   num_workers: 4
-  loss: asymmetric
+  loss: asymmetric  # Use ASL for baseline
   epochs: 5
   lr_min: 0.00002
   lr_max: 0.00008
@@ -64,8 +64,8 @@ phase2:
   save_best: true
   min_delta: 0.0001
   load_from_phase1: true
-  phase1_checkpoint: baseline_resnet50_phase1
-  save_name: baseline_resnet50_phase2
+  phase1_checkpoint: baseline_phase1
+  save_name: baseline_phase2
 
 # ========================================
 # Evaluation

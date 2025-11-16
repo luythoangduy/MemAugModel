@@ -52,7 +52,7 @@ phase1:
 # ========================================
 phase2:
   filter_normal: false
-  batch_size: 128
+  batch_size: 64
   num_workers: 4
   loss: asymmetric  # Use ASL for baseline
   epochs: 5
