@@ -1,4 +1,4 @@
 from .losses import FocalLoss, AsymmetricLoss, get_loss_function
-from .trainer import Trainer
+from .fastai_learner import create_fastai_learner
 
-__all__ = ['FocalLoss', 'AsymmetricLoss', 'get_loss_function', 'Trainer']
+__all__ = ['FocalLoss', 'AsymmetricLoss', 'get_loss_function', 'create_fastai_learner']
