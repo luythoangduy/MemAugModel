@@ -215,8 +215,9 @@ def create_fastai_learner(
     if model is None:
         model = ChestXrayModel(
             num_classes=num_classes,
-            model_name=model_name,
+            backbone=model_name,
             dropout_rate=dropout_rate,
+            use_memory=True if bank_size > 0 else False,
             bank_size=bank_size,
             update_strategy=update_strategy,
             top_k=top_k,
@@ -226,6 +227,7 @@ def create_fastai_learner(
             memory_momentum=momentum
         )
         print(f"\nCreated model: {model_name}")
+        print(f"  Update memory: {bank_size > 0}")
         print(f"  Update strategy: {update_strategy}")
         print(f"  Bank size: {bank_size}")
         print(f"  Top-k: {top_k}")
