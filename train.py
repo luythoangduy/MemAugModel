@@ -147,16 +147,13 @@ def main():
     print(f"  Total epochs: {phase1_cfg['total_epochs']}")
     print(f"  Base LR: {base_lr}")
     print(f"  Memory momentum: {phase1_cfg.get('memory_momentum', 0.9)}")
-    try:
-        learn.remove_cbs(ProgressCallback)
-    except:
-        pass
-    learn.fine_tune(
-        freeze_epochs=phase1_cfg['freeze_epochs'],
-        epochs=phase1_cfg['total_epochs'],
-        base_lr=base_lr
-    )
 
+    with learn.no_logging():
+        learn.fine_tune(
+            freeze_epochs=phase1_cfg['freeze_epochs'],
+            epochs=phase1_cfg['total_epochs'],
+            base_lr=base_lr
+        )
     # Save Phase 1 model
     phase1_save_name = phase1_cfg.get('save_name', 'phase1_model')
     learn.save(phase1_save_name)
