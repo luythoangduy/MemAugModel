@@ -275,11 +275,11 @@ def create_fastai_learner(
     if mixup:
         learn.add_cb(MixUp())
 
-    # Add progress bar callback
-    learn.add_cb(ProgressCallback())
-
     # Add CSV logger to track metrics
     learn.add_cb(CSVLogger())
+
+    # Note: ProgressCallback is added automatically by FastAI
+    # Don't add it manually to avoid conflicts in notebook environments
 
     print(f"\nLearner created successfully!")
     print(f"  Loss: {loss_type}")
