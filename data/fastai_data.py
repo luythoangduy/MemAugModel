@@ -72,14 +72,14 @@ def prepare_chestxray14_dataframe(data_dir, seed=85, filter_normal=False):
     )
 
     train_val_df = labels_df[labels_df['Patient_ID'].isin(train_val_patients)]
-
+    test_df = labels_df[labels_df['Patient_ID'].isin(test_patients)]
     print(f"\nDataset prepared:")
     print(f"  Total images: {len(labels_df)}")
     print(f"  Train+Val: {len(train_val_df)}")
     print(f"  Test: {len(labels_df) - len(train_val_df)}")
     print(f"  Unique patients (train+val): {len(train_val_patients)}")
 
-    return train_val_df, disease_labels
+    return train_val_df, disease_labels, test_df
 
 
 def create_dataloaders(train_val_df, disease_labels, batch_size=64, valid_pct=0.125, seed=85):

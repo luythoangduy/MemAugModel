@@ -302,7 +302,7 @@ if __name__ == '__main__':
     print("Testing learner creation...")
 
     data_dir = '/kaggle/input/data'
-    train_val_df, disease_labels = prepare_chestxray14_dataframe(data_dir, seed=85, filter_normal=True)
+    train_val_df, disease_labels,_ = prepare_chestxray14_dataframe(data_dir, seed=85, filter_normal=True)
     dls = create_dataloaders(train_val_df, disease_labels, batch_size=64)
 
     # Create learner

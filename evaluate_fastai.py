@@ -80,7 +80,7 @@ def get_roc_auc_detailed(learner, threshold=0.5):
         results: Dictionary with comprehensive metrics
     """
     learner.model.eval()
-    preds, y_test = learner.get_preds(ds_idx=1)
+    preds, y_test = learner.get_preds(ds_idx=0)
 
     # Calculate ROC AUC (threshold-independent)
     roc_auc = roc_auc_score(y_test, preds)
@@ -208,17 +208,17 @@ def main():
 
     # Prepare data
     print("Preparing data...")
-    train_val_df, disease_labels = prepare_chestxray14_dataframe(
+    train_val_df, disease_labels, test_df = prepare_chestxray14_dataframe(
         args.data_dir,
         seed=SEED,
         filter_normal=False  # Include all images
     )
 
     dls = create_dataloaders(
-        train_val_df,
+        test_df,
         disease_labels,
         batch_size=args.batch_size,
-        valid_pct=0.125,
+        valid_pct=0.0,
         seed=SEED
     )
 
