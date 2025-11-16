@@ -165,6 +165,7 @@ def main():
     print("="*60)
 
     # Prepare data for Phase 2
+    
     train_val_df_phase2, disease_labels, test_df_phase2 = prepare_chestxray14_dataframe(
         data_cfg['data_dir'],
         seed=data_cfg['seed'],
@@ -210,7 +211,10 @@ def main():
         model_name=model_cfg['backbone'],
         use_fp16=True
     )
-
+    try:
+            learn_phase2.remove_cbs(ProgressCallback)
+    except:
+        pass
     # Load Phase 1 weights if requested
     if phase2_cfg.get('load_from_phase1', True):
         checkpoint_name = phase2_cfg.get('phase1_checkpoint', phase1_save_name)
