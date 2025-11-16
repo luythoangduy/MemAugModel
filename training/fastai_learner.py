@@ -169,6 +169,10 @@ def create_fastai_learner(
     asymmetric_gamma_pos=1,         # Asymmetric loss gamma for positive samples
     update_strategy='rarity',       # Memory bank update strategy
     bank_size=512,                  # Memory bank size
+    top_k=3,                        # Number of features to retrieve from memory
+    normalize_retrieved=True,       # Normalize retrieved features
+    rarity_threshold=0.2,           # Rarity threshold for update
+    diversity_weight=0.5,           # Diversity weight for hybrid strategy
     model_name='efficientnet_b0',   # Model architecture
     use_fp16=True                   # Use mixed precision training
 ):
@@ -194,6 +198,10 @@ def create_fastai_learner(
         asymmetric_gamma_pos: ASL gamma for positives
         update_strategy: Memory bank strategy
         bank_size: Memory bank size
+        top_k: Number of features to retrieve from memory
+        normalize_retrieved: Whether to normalize retrieved features
+        rarity_threshold: Threshold for rarity-based updates
+        diversity_weight: Weight for diversity in hybrid strategy
         model_name: Backbone architecture
         use_fp16: Use mixed precision
 
@@ -211,13 +219,17 @@ def create_fastai_learner(
             dropout_rate=dropout_rate,
             bank_size=bank_size,
             update_strategy=update_strategy,
-            rarity_threshold=0.2,
-            diversity_weight=0.5,
+            top_k=top_k,
+            normalize_retrieved=normalize_retrieved,
+            rarity_threshold=rarity_threshold,
+            diversity_weight=diversity_weight,
             memory_momentum=momentum
         )
         print(f"\nCreated model: {model_name}")
         print(f"  Update strategy: {update_strategy}")
         print(f"  Bank size: {bank_size}")
+        print(f"  Top-k: {top_k}")
+        print(f"  Normalize retrieved: {normalize_retrieved}")
         print(f"  Memory momentum: {momentum}")
 
     # Prepare default callbacks
