@@ -129,6 +129,11 @@ def main():
     # LR Finder
     if phase1_cfg.get('use_lr_finder', False):
         print("\nRunning LR Finder...")
+        # Remove ProgressCallback to avoid display issues when running as script
+        try:
+            learn.remove_cbs(ProgressCallback)
+        except:
+            pass
         lrs = learn.lr_find(suggest_funcs=(minimum, steep, valley, slide))
         print(f'Suggested learning rate (minimum): {lrs.minimum}')
         print(f'Suggested learning rate (valley): {lrs.valley}')
