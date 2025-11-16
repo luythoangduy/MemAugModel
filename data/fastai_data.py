@@ -103,6 +103,8 @@ def create_dataloaders(train_val_df, disease_labels, batch_size=64, valid_pct=0.
 
     # Batch transforms
     batch_transforms = [
+        Flip(),
+        Rotate(),
         Normalize.from_stats(*imagenet_stats),
     ]
 
