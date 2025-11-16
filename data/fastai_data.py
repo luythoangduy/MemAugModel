@@ -146,7 +146,7 @@ if __name__ == '__main__':
     print("="*60)
     print("PHASE 1: Preparing abnormal images only")
     print("="*60)
-    train_val_df_phase1, disease_labels = prepare_chestxray14_dataframe(
+    train_val_df_phase1, disease_labels,_ = prepare_chestxray14_dataframe(
         data_dir, seed=85, filter_normal=True
     )
     dls_phase1 = create_dataloaders(train_val_df_phase1, disease_labels, batch_size=64)

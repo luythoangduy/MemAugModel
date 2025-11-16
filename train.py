@@ -80,7 +80,7 @@ def main():
     print("="*60)
 
     # Prepare data for Phase 1
-    train_val_df_phase1, disease_labels = prepare_chestxray14_dataframe(
+    train_val_df_phase1, disease_labels, _ = prepare_chestxray14_dataframe(
         data_cfg['data_dir'],
         seed=data_cfg['seed'],
         filter_normal=phase1_cfg['filter_normal']
@@ -165,7 +165,7 @@ def main():
     print("="*60)
 
     # Prepare data for Phase 2
-    train_val_df_phase2, disease_labels = prepare_chestxray14_dataframe(
+    train_val_df_phase2, disease_labels, test_df_phase2 = prepare_chestxray14_dataframe(
         data_cfg['data_dir'],
         seed=data_cfg['seed'],
         filter_normal=phase2_cfg['filter_normal']
@@ -246,7 +246,7 @@ def main():
     def get_roc_auc(learner, disease_labels):
         """Evaluate model on validation set"""
         learner.model.eval()
-        preds, y_test = learner.get_preds(ds_idx=1)  # ds_idx=1 for validation set
+        preds, y_test = learner.get_preds(ds_idx=0)  # ds_idx=0 for test set
 
         roc_auc = roc_auc_score(y_test, preds)
 
@@ -272,6 +272,14 @@ def main():
         }
 
     # Evaluate final model
+    dls_test = create_dataloaders(
+        test_df_phase2,
+        disease_labels,
+        batch_size=eval_cfg.get('batch_size', 64),
+        valid_pct=0.0,
+        seed=data_cfg['seed']
+    )
+    learn_phase2.dls = dls_test
     results = get_roc_auc(learn_phase2, disease_labels)
 
     # Save predictions if requested
