@@ -1,0 +1,85 @@
+# Ablation Study: top_k=5
+# Tests impact of retrieving more memory features
+
+experiment_name: ablation_topk5
+description: "EfficientNetV2-S with rarity memory but top_k=5"
+
+# ========================================
+# Model Configuration
+# ========================================
+model:
+  num_classes: 14
+  backbone: efficientnet_v2_s
+  pretrained: true
+  dropout_rate: 0.3
+
+# ========================================
+# Memory Bank Configuration
+# ========================================
+memory:
+  use_memory: true
+  bank_size: 512
+  update_strategy: rarity
+  rarity_threshold: 0.2
+  top_k: 5  # KEY DIFFERENCE: 5 retrieved features
+  normalize_retrieved: true
+  memory_momentum: 0.9
+  self_match_threshold: 0.9999
+
+# ========================================
+# Data Configuration
+# ========================================
+data:
+  data_dir: /kaggle/input/data
+  image_size: [224, 224]
+  seed: 85
+  valid_pct: 0.125
+
+# ========================================
+# Training Phase 1
+# ========================================
+phase1:
+  filter_normal: true
+  batch_size: 64
+  num_workers: 4
+  loss: bce
+  freeze_epochs: 3
+  total_epochs: 20
+  use_lr_finder: true
+  optimizer: adam
+  lr: 0.0001
+  weight_decay: 0.01
+  memory_momentum: 0.9
+  early_stopping_patience: 5
+  save_best: true
+  min_delta: 0.0001
+  save_name: topk5_phase1
+
+# ========================================
+# Training Phase 2
+# ========================================
+phase2:
+  filter_normal: false
+  batch_size: 128
+  num_workers: 4
+  loss: bce
+  epochs: 5
+  lr_min: 0.00002
+  lr_max: 0.00008
+  optimizer: adam
+  weight_decay: 0.01
+  memory_momentum: 0.9999
+  early_stopping_patience: 5
+  save_best: true
+  min_delta: 0.0001
+  load_from_phase1: true
+  phase1_checkpoint: topk5_phase1
+  save_name: topk5_phase2
+
+# ========================================
+# Evaluation
+# ========================================
+evaluation:
+  batch_size: 128
+  num_workers: 4
+  save_predictions: true

@@ -1,0 +1,110 @@
+# Memory-Augmented EfficientNetV2-S with Rarity Strategy
+# Default experiment from paper/notebook
+
+# Experiment info
+experiment_name: memory_rarity_effv2s
+description: "EfficientNetV2-S with rarity-based memory (paper/notebook default)"
+
+# ========================================
+# Model Configuration
+# ========================================
+model:
+  num_classes: 14
+  backbone: efficientnet_v2_s
+  pretrained: true
+  dropout_rate: 0.3
+
+# ========================================
+# Memory Bank Configuration
+# ========================================
+memory:
+  use_memory: true
+  bank_size: 512
+  update_strategy: rarity
+  rarity_threshold: 0.2
+  top_k: 3
+  normalize_retrieved: true
+  memory_momentum: 0.9
+  self_match_threshold: 0.9999
+
+# ========================================
+# Data Configuration
+# ========================================
+data:
+  data_dir: /kaggle/input/data
+  image_size: [224, 224]
+  seed: 85
+  valid_pct: 0.125  # 12.5% validation
+
+# ========================================
+# Training Phase 1: Abnormal Images Only
+# ========================================
+phase1:
+  # Data
+  filter_normal: true  # Only abnormal images
+  batch_size: 64
+  num_workers: 4
+
+  # Training
+  loss: bce
+  freeze_epochs: 3
+  total_epochs: 20
+  use_lr_finder: true
+
+  # Optimizer
+  optimizer: adam
+  lr: 0.0001
+  weight_decay: 0.01
+
+  # Memory
+  memory_momentum: 0.9
+
+  # Callbacks
+  early_stopping_patience: 5
+  save_best: true
+  min_delta: 0.0001
+
+  # Save path
+  save_name: phase1_model
+
+# ========================================
+# Training Phase 2: All Images
+# ========================================
+phase2:
+  # Data
+  filter_normal: false  # Include normal images
+  batch_size: 128
+  num_workers: 4
+
+  # Training
+  loss: bce  # Notebook uses BCE for both phases
+  epochs: 5
+  lr_min: 0.00002  # 2e-5
+  lr_max: 0.00008  # 8e-5
+
+  # Optimizer
+  optimizer: adam
+  weight_decay: 0.01
+
+  # Memory (IMPORTANT: Higher momentum!)
+  memory_momentum: 0.9999
+
+  # Callbacks
+  early_stopping_patience: 5
+  save_best: true
+  min_delta: 0.0001
+
+  # Load from Phase 1
+  load_from_phase1: true
+  phase1_checkpoint: phase1_model
+
+  # Save path
+  save_name: phase2_model
+
+# ========================================
+# Evaluation
+# ========================================
+evaluation:
+  batch_size: 128
+  num_workers: 4
+  save_predictions: true
