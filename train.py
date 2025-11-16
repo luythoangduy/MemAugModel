@@ -147,8 +147,8 @@ def main():
     print(f"  Total epochs: {phase1_cfg['total_epochs']}")
     print(f"  Base LR: {base_lr}")
     print(f"  Memory momentum: {phase1_cfg.get('memory_momentum', 0.9)}")
-    learn.remove_cb(ProgressCallback)
-
+    learn.add_cb(ProgressCallback())
+    learn.add_cb(CSVLogger())
     learn.fine_tune(
         freeze_epochs=phase1_cfg['freeze_epochs'],
         epochs=phase1_cfg['total_epochs'],
