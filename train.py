@@ -97,7 +97,7 @@ def main():
         )
 
         # Create test dataloader using fastai components
-        from fastai.vision.all import DataBlock, ImageBlock, MultiCategoryBlock, Resize, Normalize, imagenet_stats
+        from fastai.vision.all import DataBlock, ImageBlock, MultiCategoryBlock, Resize, Normalize, imagenet_stats, IndexSplitter
 
         item_transforms = [Resize((224, 224))]
         batch_transforms = [Normalize.from_stats(*imagenet_stats)]
@@ -105,9 +105,13 @@ def main():
         def get_x(row): return row['Paths']
         def get_y(row): return row[disease_labels].tolist()
 
+        # Use IndexSplitter to put all data in validation set (for testing)
+        # Train set is empty, validation set contains all test data
+        all_indices = list(range(len(test_df)))
+
         dblock = DataBlock(
             blocks=(ImageBlock, MultiCategoryBlock(encoded=True, vocab=disease_labels)),
-            splitter=lambda x: ([], list(range(len(x)))),  # All for validation (test set)
+            splitter=IndexSplitter(all_indices),  # All data in validation split
             get_x=get_x,
             get_y=get_y,
             item_tfms=item_transforms,
@@ -115,6 +119,10 @@ def main():
         )
 
         dls_test = dblock.dataloaders(test_df, bs=eval_cfg.get('batch_size', 64))
+
+        print(f"Test dataloader created:")
+        print(f"  Test samples: {len(dls_test.valid_ds)}")
+        print(f"  Batch size: {eval_cfg.get('batch_size', 64)}")
 
         # Create learner
         learn = create_fastai_learner(
