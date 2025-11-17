@@ -13,7 +13,7 @@ import os
 import yaml
 
 from fastai.vision.all import *
-from data.fastai_data import prepare_chestxray14_dataframe, create_dataloaders
+from data.fastai_data import prepare_chestxray14_dataframe, create_dataloaders, get_validation_split
 from training.fastai_learner import create_fastai_learner
 
 
@@ -74,24 +74,45 @@ def main():
     print(f"  Loss Phase 2: {phase2_cfg['loss']}")
     print()
 
+    # ========== PREPARE CONSISTENT VALIDATION SPLIT ==========
+    print("\n" + "="*60)
+    print("PREPARING CONSISTENT VALIDATION SPLIT")
+    print("="*60)
+
+    # Load FULL training data (no filter) to create global validation split
+    train_val_df_full, disease_labels, _ = prepare_chestxray14_dataframe(
+        data_cfg['data_dir'],
+        seed=data_cfg['seed'],
+        filter_normal=False  # Load all to get consistent split
+    )
+
+    # Create global validation split (10% of all train images)
+    val_image_indices = get_validation_split(
+        train_val_df_full,
+        valid_pct=data_cfg.get('valid_pct', 0.1),
+        seed=data_cfg['seed']
+    )
+
     # ========== PHASE 1: Abnormal images only ==========
     print("\n" + "="*60)
     print("PHASE 1: Training on abnormal images")
     print("="*60)
 
-    # Prepare data for Phase 1
+    # Prepare data for Phase 1 (filtered)
     train_val_df_phase1, disease_labels, _ = prepare_chestxray14_dataframe(
         data_cfg['data_dir'],
         seed=data_cfg['seed'],
         filter_normal=phase1_cfg['filter_normal']
     )
 
+    # Create DataLoaders with consistent validation split
     dls_phase1 = create_dataloaders(
         train_val_df_phase1,
         disease_labels,
         batch_size=phase1_cfg['batch_size'],
-        valid_pct=data_cfg.get('valid_pct', 0.125),
-        seed=data_cfg['seed']
+        valid_pct=data_cfg.get('valid_pct', 0.1),
+        seed=data_cfg['seed'],
+        val_image_indices=val_image_indices  # Use consistent validation
     )
 
     # Create callbacks for Phase 1
@@ -164,20 +185,31 @@ def main():
     print("PHASE 2: Fine-tuning on all images (including normal)")
     print("="*60)
 
-    # Prepare data for Phase 2
-    
-    train_val_df_phase2, disease_labels, test_df_phase2 = prepare_chestxray14_dataframe(
+    # IMPORTANT: Re-seed to match notebook behavior
+    # Notebook resets seed before Phase 2, which ensures:
+    # - Deterministic data augmentation
+    # - Reproducible dropout patterns
+    # - Consistent batch shuffling
+    seed_everything(data_cfg['seed'])
+    print(f"Re-seeded with seed={data_cfg['seed']} for Phase 2")
+
+    # Prepare data for Phase 2 (use full train_val_df from earlier)
+    # No need to reload - we already have train_val_df_full
+    train_val_df_phase2 = train_val_df_full
+    test_df_phase2 = prepare_chestxray14_dataframe(
         data_cfg['data_dir'],
         seed=data_cfg['seed'],
         filter_normal=phase2_cfg['filter_normal']
-    )
+    )[2]  # Get test_df only
 
+    # Create DataLoaders with same consistent validation split
     dls_phase2 = create_dataloaders(
         train_val_df_phase2,
         disease_labels,
         batch_size=phase2_cfg['batch_size'],
-        valid_pct=data_cfg.get('valid_pct', 0.125),
-        seed=data_cfg['seed']
+        valid_pct=data_cfg.get('valid_pct', 0.1),
+        seed=data_cfg['seed'],
+        val_image_indices=val_image_indices  # Use same validation as Phase 1
     )
 
     # Create callbacks for Phase 2

@@ -34,7 +34,7 @@ data:
   data_dir: /kaggle/input/data
   image_size: [224, 224]
   seed: 85
-  valid_pct: 0.125  # 12.5% validation
+  valid_pct: 0.1  # 10% validation from official train set
 
 # ========================================
 # Training Phase 1: Abnormal Images Only
