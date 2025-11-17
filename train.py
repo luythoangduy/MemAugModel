@@ -39,6 +39,10 @@ def main():
     parser = argparse.ArgumentParser(description='Train Memory-Augmented Chest X-Ray Model')
     parser.add_argument('--config', type=str, required=True,
                        help='Path to experiment YAML config file')
+    parser.add_argument('--evaluate', action='store_true',
+                       help='Evaluate mode: load model and run evaluation only')
+    parser.add_argument('--model_path', type=str, default=None,
+                       help='Path to model checkpoint for evaluation (default: uses phase2_model from config)')
     args = parser.parse_args()
 
     # Load configuration
@@ -73,6 +77,113 @@ def main():
     print(f"  Loss Phase 1: {phase1_cfg['loss']}")
     print(f"  Loss Phase 2: {phase2_cfg['loss']}")
     print()
+
+    # ========== EVALUATION MODE ==========
+    if args.evaluate:
+        print("\n" + "="*60)
+        print("EVALUATION MODE")
+        print("="*60)
+
+        # Determine model path
+        model_path = args.model_path if args.model_path else phase2_cfg.get('save_name', 'phase2_model')
+        print(f"Model checkpoint: {model_path}")
+
+        # Load test data
+        print("\nLoading test data...")
+        _, disease_labels, test_df = prepare_chestxray14_dataframe(
+            data_cfg['data_dir'],
+            seed=data_cfg['seed'],
+            filter_normal=False  # Use all test images
+        )
+
+        # Create test dataloader using fastai components
+        from fastai.vision.all import DataBlock, ImageBlock, MultiCategoryBlock, Resize, Normalize, imagenet_stats
+
+        item_transforms = [Resize((224, 224))]
+        batch_transforms = [Normalize.from_stats(*imagenet_stats)]
+
+        def get_x(row): return row['Paths']
+        def get_y(row): return row[disease_labels].tolist()
+
+        dblock = DataBlock(
+            blocks=(ImageBlock, MultiCategoryBlock(encoded=True, vocab=disease_labels)),
+            splitter=lambda x: ([], list(range(len(x)))),  # All for validation (test set)
+            get_x=get_x,
+            get_y=get_y,
+            item_tfms=item_transforms,
+            batch_tfms=batch_transforms
+        )
+
+        dls_test = dblock.dataloaders(test_df, bs=eval_cfg.get('batch_size', 64))
+
+        # Create learner
+        learn = create_fastai_learner(
+            dls_test,
+            num_classes=model_cfg['num_classes'],
+            cbs=[],
+            loss_type=phase2_cfg['loss'],
+            update_strategy=memory_cfg.get('update_strategy', 'rarity') if memory_cfg['use_memory'] else 'rarity',
+            bank_size=memory_cfg.get('bank_size', 512) if memory_cfg['use_memory'] else 0,
+            top_k=memory_cfg.get('top_k', 3),
+            normalize_retrieved=memory_cfg.get('normalize_retrieved', True),
+            rarity_threshold=memory_cfg.get('rarity_threshold', 0.2),
+            diversity_weight=memory_cfg.get('diversity_weight', 0.5),
+            momentum=phase2_cfg.get('memory_momentum', 0.9999),
+            model_name=model_cfg['backbone'],
+            use_fp16=True
+        )
+
+        # Load checkpoint
+        print(f"\nLoading model from: {model_path}")
+        learn.load(model_path)
+        print("Model loaded successfully!")
+
+        # Run evaluation
+        print("\n" + "="*60)
+        print("RUNNING EVALUATION ON TEST SET")
+        print("="*60)
+
+        from sklearn.metrics import roc_auc_score
+
+        learn.model.eval()
+        preds, y_test = learn.get_preds(ds_idx=1)  # Get predictions on validation set (which is our test set)
+
+        # Calculate metrics
+        roc_auc = roc_auc_score(y_test, preds)
+
+        scores = []
+        for i in range(model_cfg['num_classes']):
+            try:
+                label_roc_auc_score = roc_auc_score(y_test[:, i], preds[:, i])
+                scores.append(label_roc_auc_score)
+            except:
+                scores.append(0.0)
+
+        print('\nROC AUC per disease:')
+        for label, score in zip(disease_labels, scores):
+            print(f'  {label:20s}: {score:.4f}')
+
+        print(f'\n{"="*60}')
+        print(f'Mean AUC Score: {roc_auc:.4f}')
+        print(f'{"="*60}')
+
+        # Save predictions if requested
+        if eval_cfg.get('save_predictions', True):
+            pred_save_path = f'{exp_name}_test_predictions.pt'
+            torch.save({
+                'predictions': preds,
+                'targets': y_test,
+                'disease_labels': disease_labels,
+                'per_class_auc': scores,
+                'mean_auc': roc_auc
+            }, pred_save_path)
+            print(f"\nResults saved to: {pred_save_path}")
+
+        print("\n" + "="*60)
+        print("Evaluation completed!")
+        print("="*60)
+
+        return  # Exit after evaluation
 
     # ========== PREPARE CONSISTENT VALIDATION SPLIT ==========
     print("\n" + "="*60)
