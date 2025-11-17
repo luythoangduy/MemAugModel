@@ -1,6 +1,6 @@
 # Memory-Augmented Chest X-Ray Classification
 
-Implementation of **"Mitigating Class Imbalance in Chest X-Ray Classification with Memory-Augmented Models"**
+This is an expanded implementation from the paper **"Mitigating Class Imbalance in Chest X-Ray Classification with Memory-Augmented Models"**.
 
 A memory-augmented neural network for multi-label chest X-ray classification on the ChestX-ray14 dataset, using FastAI and two-phase training strategy.
 
@@ -312,16 +312,7 @@ z' = z + Σ(w_j * m_j)  # w_j = softmax(similarities)
 
 ## 📚 Citation
 
-If you use this code in your research, please cite:
-
-```bibtex
-@inproceedings{hoang2024mitigating,
-  title={Mitigating Class Imbalance in Chest X-Ray Classification with Memory-Augmented Models},
-  author={Hoang, Khuong Duy and Nguyen, Huu Duy and Huynh, Cong Viet Ngu},
-  booktitle={ISCIT Conference},
-  year={2024}
-}
-```
+Coming soon.
 
 ---
 

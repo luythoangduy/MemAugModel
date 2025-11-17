@@ -1,15 +1,15 @@
-# Baseline EfficientNetV2-S without Memory
-# For comparison with memory-augmented version
+# Baseline ResNet50 without Memory - Single Phase Training
+# Train directly on all images (no two-phase training)
 
-experiment_name: baseline_effv2m
-description: "Baseline EfficientNetV2-M without memory augmentation"
+experiment_name: baseline_resnet50_1phase
+description: "Baseline ResNet50 single phase training on all images"
 
 # ========================================
 # Model Configuration
 # ========================================
 model:
   num_classes: 14
-  backbone: efficientnet_v2_m
+  backbone: resnet50
   pretrained: true
   dropout_rate: 0.3
 
@@ -29,43 +29,23 @@ data:
   valid_pct: 0.125
 
 # ========================================
-# Training Phase 1: Abnormal Images Only
+# Training: Single Phase on All Images
 # ========================================
 phase1:
-  filter_normal: true
+  filter_normal: false  # Train on all images
   batch_size: 64
   num_workers: 4
   loss: bce
   freeze_epochs: 3
-  total_epochs: 20
+  total_epochs: 25  # Longer training since single phase
   use_lr_finder: true
   optimizer: adam
   lr: 0.0001
   weight_decay: 0.01
-  early_stopping_patience: 5
+  early_stopping_patience: 7
   save_best: true
   min_delta: 0.0001
-  save_name: baseline_phase1
-
-# ========================================
-# Training Phase 2: All Images
-# ========================================
-phase2:
-  filter_normal: false
-  batch_size: 64
-  num_workers: 4
-  loss: bce
-  epochs: 5
-  lr_min: 0.00002
-  lr_max: 0.00008
-  optimizer: adam
-  weight_decay: 0.01
-  early_stopping_patience: 5
-  save_best: true
-  min_delta: 0.0001
-  load_from_phase1: true
-  phase1_checkpoint: model
-  save_name: baseline_phase2
+  save_name: baseline_resnet50_1phase
 
 # ========================================
 # Evaluation

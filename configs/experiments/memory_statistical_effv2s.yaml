@@ -1,8 +1,8 @@
 # Memory-Augmented EfficientNetV2-S with Statistical Strategy
 # Uses statistical measures for memory selection
 
-experiment_name: memory_statistical_effv2s
-description: "EfficientNetV2-S with statistical memory strategy"
+experiment_name: memory_statistical_effv2s_mom09
+description: "EfficientNetV2-S with statistical memory strategy (momentum=0.9)"
 
 # ========================================
 # Model Configuration
@@ -52,7 +52,7 @@ phase1:
   early_stopping_patience: 5
   save_best: true
   min_delta: 0.0001
-  save_name: statistical_phase1
+  save_name: statistical_mom09_phase1
 
 # ========================================
 # Training Phase 2
@@ -72,8 +72,8 @@ phase2:
   save_best: true
   min_delta: 0.0001
   load_from_phase1: true
-  phase1_checkpoint: statistical_phase1
-  save_name: statistical_phase2
+  phase1_checkpoint: model
+  save_name: statistical_mom09_phase2
 
 # ========================================
 # Evaluation

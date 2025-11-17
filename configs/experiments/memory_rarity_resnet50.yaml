@@ -73,7 +73,7 @@ phase2:
   save_best: true
   min_delta: 0.0001
   load_from_phase1: true
-  phase1_checkpoint: resnet50_phase1
+  phase1_checkpoint: model
   save_name: resnet50_phase2
 
 # ========================================

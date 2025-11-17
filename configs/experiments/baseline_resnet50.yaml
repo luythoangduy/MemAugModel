@@ -54,7 +54,7 @@ phase2:
   filter_normal: false
   batch_size: 64
   num_workers: 4
-  loss: asymmetric
+  loss: bce
   epochs: 5
   lr_min: 0.00002
   lr_max: 0.00008
@@ -64,7 +64,7 @@ phase2:
   save_best: true
   min_delta: 0.0001
   load_from_phase1: true
-  phase1_checkpoint: baseline_resnet50_phase1
+  phase1_checkpoint: model
   save_name: baseline_resnet50_phase2
 
 # ========================================

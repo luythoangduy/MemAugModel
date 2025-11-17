@@ -96,7 +96,7 @@ phase2:
 
   # Load from Phase 1
   load_from_phase1: true
-  phase1_checkpoint: phase1_model
+  phase1_checkpoint: model
 
   # Save path
   save_name: phase2_model
