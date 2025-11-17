@@ -79,19 +79,22 @@ def main():
     print("PREPARING CONSISTENT VALIDATION SPLIT")
     print("="*60)
 
-    # Load FULL training data (no filter) to create global validation split
-    train_val_df_full, disease_labels, _ = prepare_chestxray14_dataframe(
+    # Load official TRAIN set (from train_val_list.txt, no filter)
+    # This will be split into 90% train + 10% validation
+    train_df_all, disease_labels, _ = prepare_chestxray14_dataframe(
         data_cfg['data_dir'],
         seed=data_cfg['seed'],
-        filter_normal=False  # Load all to get consistent split
+        filter_normal=False  # Load all train images (no filter) to get consistent split
     )
 
-    # Create global validation split (10% of all train images)
+    # Create validation split: 10% of train images for validation
+    # This ensures Phase 1 and Phase 2 use the SAME validation images
     val_image_indices = get_validation_split(
-        train_val_df_full,
+        train_df_all,
         valid_pct=data_cfg.get('valid_pct', 0.1),
         seed=data_cfg['seed']
     )
+    print(f"  → Train will be split into 90% train + 10% validation")
 
     # ========== PHASE 1: Abnormal images only ==========
     print("\n" + "="*60)
@@ -193,9 +196,9 @@ def main():
     seed_everything(data_cfg['seed'])
     print(f"Re-seeded with seed={data_cfg['seed']} for Phase 2")
 
-    # Prepare data for Phase 2 (use full train_val_df from earlier)
-    # No need to reload - we already have train_val_df_full
-    train_val_df_phase2 = train_val_df_full
+    # Prepare data for Phase 2 (use full train set from earlier)
+    # No need to reload - we already have train_df_all
+    train_val_df_phase2 = train_df_all
     test_df_phase2 = prepare_chestxray14_dataframe(
         data_cfg['data_dir'],
         seed=data_cfg['seed'],
