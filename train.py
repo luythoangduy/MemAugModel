@@ -96,6 +96,10 @@ def main():
             filter_normal=False  # Use all test images
         )
 
+        # IMPORTANT: Reset index to ensure consecutive indices 0, 1, 2, ...
+        test_df = test_df.reset_index(drop=True)
+        print(f"Test set: {len(test_df)} images")
+
         # Create test dataloader using fastai components
         from fastai.vision.all import DataBlock, ImageBlock, MultiCategoryBlock, Resize, Normalize, imagenet_stats, IndexSplitter
 
@@ -120,8 +124,9 @@ def main():
 
         dls_test = dblock.dataloaders(test_df, bs=eval_cfg.get('batch_size', 64))
 
-        print(f"Test dataloader created:")
+        print(f"\nTest dataloader created:")
         print(f"  Test samples: {len(dls_test.valid_ds)}")
+        print(f"  Test batches: {len(dls_test.valid)}")
         print(f"  Batch size: {eval_cfg.get('batch_size', 64)}")
 
         # Create learner
