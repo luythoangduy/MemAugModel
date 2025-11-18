@@ -73,7 +73,7 @@ phase1:
 phase2:
   # Data
   filter_normal: false  # Include normal images
-  batch_size: 128
+  batch_size: 64
   num_workers: 4
 
   # Training
