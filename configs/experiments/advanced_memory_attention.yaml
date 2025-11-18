@@ -1,8 +1,8 @@
-# Memory-Augmented EfficientNetV2-S with Statistical Strategy
-# Uses statistical measures for memory selection
+# Advanced Memory Bank: Attention-based Retrieval
+# Learnable multi-head attention instead of fixed k-NN
 
-experiment_name: memory_statistical_effv2s_mom09
-description: "EfficientNetV2-S with statistical memory strategy (momentum=0.9)"
+experiment_name: advanced_memory_attention
+description: "EfficientNetV2-S with attention-based memory retrieval"
 
 # ========================================
 # Model Configuration
@@ -18,12 +18,11 @@ model:
 # ========================================
 memory:
   use_memory: true
+  memory_type: attention  # Attention-based retrieval
   bank_size: 512
-  update_strategy: statistical
-  top_k: 3
-  normalize_retrieved: 'both'
-  memory_momentum: 0.9
-  self_match_threshold: 0.9999
+  num_heads: 4  # Multi-head attention
+  dropout: 0.1
+  momentum: 0.9
 
 # ========================================
 # Data Configuration
@@ -52,7 +51,7 @@ phase1:
   early_stopping_patience: 5
   save_best: true
   min_delta: 0.0001
-  save_name: statistical_mom09_phase1
+  save_name: advanced_attn_phase1
 
 # ========================================
 # Training Phase 2
@@ -72,8 +71,8 @@ phase2:
   save_best: true
   min_delta: 0.0001
   load_from_phase1: true
-  phase1_checkpoint: model
-  save_name: statistical_mom09_phase2
+  phase1_checkpoint: advanced_attn_phase1
+  save_name: advanced_attn_phase2
 
 # ========================================
 # Evaluation

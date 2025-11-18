@@ -1,0 +1,71 @@
+# Baseline EfficientNetV2-S - Single Phase, No Validation, No Memory
+# Train on full training set without validation split
+# Warmup: 5 epochs, Main training: 10 epochs, No early stopping
+
+experiment_name: baseline_effv2s_1phase_noval
+description: "Baseline EfficientNetV2-S, full train set, warmup + 10 epochs, no memory"
+
+# ========================================
+# Model Configuration
+# ========================================
+model:
+  num_classes: 14
+  backbone: efficientnet_v2_s
+  pretrained: true
+  dropout_rate: 0.3
+
+# ========================================
+# Memory Bank Configuration (DISABLED)
+# ========================================
+memory:
+  use_memory: false
+
+# ========================================
+# Data Configuration
+# ========================================
+data:
+  data_dir: /kaggle/input/data
+  image_size: [224, 224]
+  seed: 85
+  valid_pct: 0.0  # NO validation split - use full training set
+
+# ========================================
+# Training: Single Phase on All Images
+# ========================================
+phase1:
+  # Data
+  filter_normal: false  # Train on all images
+  batch_size: 64
+  num_workers: 4
+
+  # Loss
+  loss: bce
+
+  # Training schedule
+  warmup_epochs: 5      # Warmup with frozen backbone
+  total_epochs: 10      # Main training epochs (after warmup)
+
+  # Learning rate
+  use_lr_finder: false
+  lr: 0.0001
+  warmup_lr: 0.00001
+
+  # Optimizer
+  optimizer: adam
+  weight_decay: 0.01
+
+  # Callbacks
+  early_stopping_patience: null  # NO early stopping
+  save_best: false              # Save final model only
+  min_delta: null
+
+  # Save path
+  save_name: baseline_1phase_noval
+
+# ========================================
+# Evaluation
+# ========================================
+evaluation:
+  batch_size: 128
+  num_workers: 4
+  save_predictions: true
