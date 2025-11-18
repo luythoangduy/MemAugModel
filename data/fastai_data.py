@@ -92,6 +92,7 @@ def prepare_chestxray14_dataframe(data_dir, seed=85, filter_normal=False):
 def get_validation_split(train_val_df, valid_pct=0.1, seed=85):
     """
     Get validation image indices from full train_val dataframe
+    Split by PATIENT ID to avoid data leakage
     This should be called ONCE with full (unfiltered) train data
 
     Args:
@@ -103,18 +104,29 @@ def get_validation_split(train_val_df, valid_pct=0.1, seed=85):
         val_image_indices: Set of Image_Index values for validation
     """
     np.random.seed(seed)
-    all_images = train_val_df['Image_Index'].values
-    n_val = int(len(all_images) * valid_pct)
 
-    indices = np.arange(len(all_images))
-    np.random.shuffle(indices)
-    val_indices = indices[:n_val]
+    # Split by PATIENT ID to avoid leakage
+    unique_patients = train_val_df['Patient_ID'].unique()
+    n_val_patients = int(len(unique_patients) * valid_pct)
 
-    val_image_indices = set(all_images[val_indices])
+    # Shuffle patients
+    patient_indices = np.arange(len(unique_patients))
+    np.random.shuffle(patient_indices)
 
-    print(f"\nGlobal validation split created:")
-    print(f"  Total train images: {len(all_images)}")
-    print(f"  Validation images: {len(val_image_indices)} ({valid_pct*100}%)")
+    # Select validation patients
+    val_patient_indices = patient_indices[:n_val_patients]
+    val_patients = unique_patients[val_patient_indices]
+
+    # Get all images from validation patients
+    val_mask = train_val_df['Patient_ID'].isin(val_patients)
+    val_image_indices = set(train_val_df[val_mask]['Image_Index'].values)
+
+    print(f"\nGlobal validation split created (patient-level):")
+    print(f"  Total patients: {len(unique_patients)}")
+    print(f"  Validation patients: {len(val_patients)} ({len(val_patients)/len(unique_patients)*100:.1f}%)")
+    print(f"  Total train images: {len(train_val_df)}")
+    print(f"  Validation images: {len(val_image_indices)} ({len(val_image_indices)/len(train_val_df)*100:.1f}%)")
+    print(f"  → No patient appears in both train and validation!")
 
     return val_image_indices
 
