@@ -101,7 +101,7 @@ def main():
         print(f"Test set: {len(test_df)} images")
 
         # Create test dataloader using fastai components
-        from fastai.vision.all import DataBlock, ImageBlock, MultiCategoryBlock, Resize, Normalize, imagenet_stats, IndexSplitter
+        from fastai.vision.all import DataBlock, ImageBlock, MultiCategoryBlock, Resize, Normalize, imagenet_stats
 
         item_transforms = [Resize((224, 224))]
         batch_transforms = [Normalize.from_stats(*imagenet_stats)]
@@ -109,13 +109,16 @@ def main():
         def get_x(row): return row['Paths']
         def get_y(row): return row[disease_labels].tolist()
 
-        # Use IndexSplitter to put all data in validation set (for testing)
-        # Train set is empty, validation set contains all test data
-        all_indices = list(range(len(test_df)))
+        # Custom splitter: minimal train set (1 sample), rest in validation
+        def test_splitter(items):
+            # Return (train_indices, val_indices)
+            # Put first sample in train (dummy), rest in validation for testing
+            # FastAI requires at least 1 sample in train set
+            return ([0], list(range(len(items))))
 
         dblock = DataBlock(
             blocks=(ImageBlock, MultiCategoryBlock(encoded=True, vocab=disease_labels)),
-            splitter=IndexSplitter(all_indices),  # All data in validation split
+            splitter=test_splitter,  # All data in validation split
             get_x=get_x,
             get_y=get_y,
             item_tfms=item_transforms,
