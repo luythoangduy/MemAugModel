@@ -74,10 +74,24 @@ def main():
     print(f"  Backbone: {model_cfg['backbone']}")
     print(f"  Memory: {memory_cfg['use_memory']}")
     if memory_cfg['use_memory']:
-        print(f"    - Strategy: {memory_cfg['update_strategy']}")
-        print(f"    - Bank size: {memory_cfg['bank_size']}")
-        print(f"    - Top-k: {memory_cfg['top_k']}")
-        print(f"    - Normalize retrieved: {memory_cfg.get('normalize_retrieved', True)}")
+        # Handle both old (update_strategy) and new (memory_type) configs
+        if 'memory_type' in memory_cfg:
+            print(f"    - Type: {memory_cfg['memory_type']}")
+            if memory_cfg.get('update_mode'):
+                print(f"    - Update mode: {memory_cfg['update_mode']}")
+        elif 'update_strategy' in memory_cfg:
+            print(f"    - Strategy: {memory_cfg['update_strategy']}")
+
+        print(f"    - Bank size: {memory_cfg.get('bank_size', 512)}")
+
+        if 'top_k' in memory_cfg:
+            print(f"    - Top-k: {memory_cfg['top_k']}")
+        elif 'adaptive_k' in memory_cfg and memory_cfg['adaptive_k']:
+            print(f"    - Adaptive k: {memory_cfg.get('min_k', 1)}-{memory_cfg.get('max_k', 10)}")
+
+        if 'normalize_retrieved' in memory_cfg:
+            print(f"    - Normalize retrieved: {memory_cfg['normalize_retrieved']}")
+
     print(f"  Loss Phase 1: {phase1_cfg['loss']}")
     if not is_single_phase:
         print(f"  Loss Phase 2: {phase2_cfg['loss']}")
