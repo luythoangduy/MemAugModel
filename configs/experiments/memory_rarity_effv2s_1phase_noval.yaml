@@ -1,0 +1,81 @@
+# Memory-Augmented EfficientNetV2-S - Single Phase, No Validation
+# Train on full training set without validation split
+# Warmup: 5 epochs, Main training: 10 epochs, No early stopping
+
+experiment_name: memory_rarity_effv2s_1phase_noval
+description: "EfficientNetV2-S with rarity memory, full train set, warmup + 10 epochs"
+
+# ========================================
+# Model Configuration
+# ========================================
+model:
+  num_classes: 14
+  backbone: efficientnet_v2_s
+  pretrained: true
+  dropout_rate: 0.3
+
+# ========================================
+# Memory Bank Configuration
+# ========================================
+memory:
+  use_memory: true
+  bank_size: 512
+  update_strategy: rarity
+  rarity_threshold: 0.2
+  top_k: 3
+  normalize_retrieved: 'both'
+  memory_momentum: 0.9
+  self_match_threshold: 1.0
+
+# ========================================
+# Data Configuration
+# ========================================
+data:
+  data_dir: /kaggle/input/data
+  image_size: [224, 224]
+  seed: 85
+  valid_pct: 0.0  # NO validation split - use full training set
+
+# ========================================
+# Training: Single Phase on All Images
+# ========================================
+phase1:
+  # Data
+  filter_normal: false  # Train on all images
+  batch_size: 128
+  num_workers: 4
+
+  # Loss
+  loss: bce
+
+  # Training schedule
+  warmup_epochs: 5      # NEW: Warmup with frozen backbone
+  total_epochs: 10      # Main training epochs (after warmup)
+
+  # Learning rate
+  use_lr_finder: false  # Use fixed LR schedule
+  lr: 0.0001
+  warmup_lr: 0.00001    # Lower LR during warmup
+
+  # Optimizer
+  optimizer: adam
+  weight_decay: 0.01
+
+  # Memory
+  memory_momentum: 0.9
+
+  # Callbacks
+  early_stopping_patience: null  # NO early stopping
+  save_best: false              # Save final model only
+  min_delta: null
+
+  # Save path
+  save_name: rarity_1phase_noval
+
+# ========================================
+# Evaluation
+# ========================================
+evaluation:
+  batch_size: 128
+  num_workers: 4
+  save_predictions: true
