@@ -35,7 +35,7 @@ data:
 phase1:
   # Data
   filter_normal: false  # Train on all images
-  batch_size: 64
+  batch_size: 32
   num_workers: 4
 
   # Loss
@@ -66,6 +66,6 @@ phase1:
 # Evaluation
 # ========================================
 evaluation:
-  batch_size: 128
+  batch_size: 32
   num_workers: 4
   save_predictions: true

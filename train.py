@@ -339,6 +339,12 @@ def main():
         print(f"  Main epochs: {total_epochs} (LR={base_lr})")
         print(f"  Memory momentum: {phase1_cfg.get('memory_momentum', 0.9)}")
 
+        # Remove ProgressCallback to avoid display issues
+        try:
+            learn.remove_cbs(ProgressCallback)
+        except:
+            pass
+
         # Warmup phase: Freeze backbone
         print(f"\n[Warmup] Training with frozen backbone for {warmup_epochs} epochs...")
         learn.freeze()
