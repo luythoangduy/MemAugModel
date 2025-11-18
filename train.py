@@ -13,8 +13,6 @@ import os
 import yaml
 
 from fastai.vision.all import *
-from fastai.callback.progress import ProgressCallback
-from fastai.callback.core import CSVLogger
 from data.fastai_data import prepare_chestxray14_dataframe, create_dataloaders, get_validation_split
 from training.fastai_learner import create_fastai_learner
 
