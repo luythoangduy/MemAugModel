@@ -266,20 +266,31 @@ def main():
         val_image_indices=val_image_indices  # Use consistent validation
     )
 
-    # Create callbacks for Phase 1
-    cbs_phase1 = [
-        SaveModelCallback(
-            monitor='valid_loss',
-            min_delta=phase1_cfg.get('min_delta', 0.0001),
-            with_opt=True
-        ),
-        EarlyStoppingCallback(
-            monitor='valid_loss',
-            min_delta=phase1_cfg.get('min_delta_early_stop', 0.001),
-            patience=phase1_cfg.get('early_stopping_patience', 5)
-        ),
-        #ShowGraphCallback()
-    ]
+    # Create callbacks for Phase 1 (only if validation exists)
+    cbs_phase1 = []
+
+    # Check if we have validation set
+    has_validation = data_cfg.get('valid_pct', 0.1) > 0
+
+    if has_validation:
+        # Add callbacks only if validation exists
+        if phase1_cfg.get('save_best', True):
+            cbs_phase1.append(
+                SaveModelCallback(
+                    monitor='valid_loss',
+                    min_delta=phase1_cfg.get('min_delta', 0.0001),
+                    with_opt=True
+                )
+            )
+
+        if phase1_cfg.get('early_stopping_patience') is not None:
+            cbs_phase1.append(
+                EarlyStoppingCallback(
+                    monitor='valid_loss',
+                    min_delta=phase1_cfg.get('min_delta_early_stop', 0.001),
+                    patience=phase1_cfg['early_stopping_patience']
+                )
+            )
 
     # Create learner for Phase 1
     learn = create_fastai_learner(
@@ -313,19 +324,49 @@ def main():
     else:
         base_lr = phase1_cfg.get('lr', 1e-4)
 
-    # Training Phase 1: fine_tune
+    # Training Phase 1
     print(f"\nStarting Phase 1 training...")
-    print(f"  Freeze epochs: {phase1_cfg['freeze_epochs']}")
-    print(f"  Total epochs: {phase1_cfg['total_epochs']}")
-    print(f"  Base LR: {base_lr}")
-    print(f"  Memory momentum: {phase1_cfg.get('memory_momentum', 0.9)}")
 
-    with learn.no_logging():
-        learn.fine_tune(
-            freeze_epochs=phase1_cfg['freeze_epochs'],
-            epochs=phase1_cfg['total_epochs'],
-            base_lr=base_lr
-        )
+    # Check if using warmup schedule
+    warmup_epochs = phase1_cfg.get('warmup_epochs', None)
+
+    if warmup_epochs is not None and warmup_epochs > 0:
+        # NEW: Warmup schedule (freeze backbone, lower LR)
+        warmup_lr = phase1_cfg.get('warmup_lr', base_lr / 10)
+        total_epochs = phase1_cfg['total_epochs']
+
+        print(f"  Warmup epochs: {warmup_epochs} (LR={warmup_lr})")
+        print(f"  Main epochs: {total_epochs} (LR={base_lr})")
+        print(f"  Memory momentum: {phase1_cfg.get('memory_momentum', 0.9)}")
+
+        # Warmup phase: Freeze backbone
+        print(f"\n[Warmup] Training with frozen backbone for {warmup_epochs} epochs...")
+        learn.freeze()
+        with learn.no_logging():
+            learn.fit_one_cycle(warmup_epochs, lr_max=warmup_lr)
+
+        # Main training: Unfreeze and train
+        print(f"\n[Main] Unfreezing and training for {total_epochs} epochs...")
+        learn.unfreeze()
+        with learn.no_logging():
+            learn.fit_one_cycle(total_epochs, lr_max=base_lr)
+
+    else:
+        # ORIGINAL: fine_tune schedule
+        freeze_epochs = phase1_cfg.get('freeze_epochs', 3)
+        total_epochs = phase1_cfg['total_epochs']
+
+        print(f"  Freeze epochs: {freeze_epochs}")
+        print(f"  Total epochs: {total_epochs}")
+        print(f"  Base LR: {base_lr}")
+        print(f"  Memory momentum: {phase1_cfg.get('memory_momentum', 0.9)}")
+
+        with learn.no_logging():
+            learn.fine_tune(
+                freeze_epochs=freeze_epochs,
+                epochs=total_epochs,
+                base_lr=base_lr
+            )
     # Save Phase 1 model
     phase1_save_name = phase1_cfg.get('save_name', 'phase1_model')
 
