@@ -54,8 +54,11 @@ def main():
     memory_cfg = config['memory']
     data_cfg = config['data']
     phase1_cfg = config['phase1']
-    phase2_cfg = config['phase2']
+    phase2_cfg = config.get('phase2', None)  # Optional for 1-phase configs
     eval_cfg = config['evaluation']
+
+    # Determine if this is 1-phase or 2-phase training
+    is_single_phase = phase2_cfg is None
 
     # Set random seed
     seed_everything(data_cfg['seed'])
@@ -67,6 +70,7 @@ def main():
     print(f"{'='*60}\n")
 
     print("Configuration:")
+    print(f"  Training mode: {'Single-phase' if is_single_phase else 'Two-phase'}")
     print(f"  Backbone: {model_cfg['backbone']}")
     print(f"  Memory: {memory_cfg['use_memory']}")
     if memory_cfg['use_memory']:
@@ -75,7 +79,8 @@ def main():
         print(f"    - Top-k: {memory_cfg['top_k']}")
         print(f"    - Normalize retrieved: {memory_cfg.get('normalize_retrieved', True)}")
     print(f"  Loss Phase 1: {phase1_cfg['loss']}")
-    print(f"  Loss Phase 2: {phase2_cfg['loss']}")
+    if not is_single_phase:
+        print(f"  Loss Phase 2: {phase2_cfg['loss']}")
     print()
 
     # ========== EVALUATION MODE ==========
@@ -85,7 +90,12 @@ def main():
         print("="*60)
 
         # Determine model path
-        model_path = args.model_path if args.model_path else phase2_cfg.get('save_name', 'phase2_model')
+        if args.model_path:
+            model_path = args.model_path
+        elif is_single_phase:
+            model_path = phase1_cfg.get('save_name', 'phase1_model')
+        else:
+            model_path = phase2_cfg.get('save_name', 'phase2_model')
         print(f"Model checkpoint: {model_path}")
 
         # Load test data
@@ -318,100 +328,108 @@ def main():
         )
     # Save Phase 1 model
     phase1_save_name = phase1_cfg.get('save_name', 'phase1_model')
-    learn.save(phase1_save_name)
-    print(f"\nPhase 1 model saved as: {phase1_save_name}")
 
-    # ========== PHASE 2: All images ==========
-    print("\n" + "="*60)
-    print("PHASE 2: Fine-tuning on all images (including normal)")
-    print("="*60)
+    # Only save final model if save_best is False
+    # If save_best=True, SaveModelCallback already saved the best model
+    if not phase1_cfg.get('save_best', True):
+        learn.save(phase1_save_name)
+        print(f"\nPhase 1 model saved as: {phase1_save_name}")
+    else:
+        print(f"\nPhase 1 best model already saved by SaveModelCallback as: {phase1_save_name}")
 
-    # IMPORTANT: Re-seed to match notebook behavior
-    # Notebook resets seed before Phase 2, which ensures:
-    # - Deterministic data augmentation
-    # - Reproducible dropout patterns
-    # - Consistent batch shuffling
-    seed_everything(data_cfg['seed'])
-    print(f"Re-seeded with seed={data_cfg['seed']} for Phase 2")
+    # ========== PHASE 2: All images (only for 2-phase training) ==========
+    if not is_single_phase:
+        print("\n" + "="*60)
+        print("PHASE 2: Fine-tuning on all images (including normal)")
+        print("="*60)
 
-    # Prepare data for Phase 2 (use full train set from earlier)
-    # No need to reload - we already have train_df_all
-    train_val_df_phase2 = train_df_all
-    test_df_phase2 = prepare_chestxray14_dataframe(
-        data_cfg['data_dir'],
-        seed=data_cfg['seed'],
-        filter_normal=phase2_cfg['filter_normal']
-    )[2]  # Get test_df only
+        # IMPORTANT: Re-seed to match notebook behavior
+        # Notebook resets seed before Phase 2, which ensures:
+        # - Deterministic data augmentation
+        # - Reproducible dropout patterns
+        # - Consistent batch shuffling
+        seed_everything(data_cfg['seed'])
+        print(f"Re-seeded with seed={data_cfg['seed']} for Phase 2")
 
-    # Create DataLoaders with same consistent validation split
-    dls_phase2 = create_dataloaders(
-        train_val_df_phase2,
-        disease_labels,
-        batch_size=phase2_cfg['batch_size'],
-        valid_pct=data_cfg.get('valid_pct', 0.1),
-        seed=data_cfg['seed'],
-        val_image_indices=val_image_indices  # Use same validation as Phase 1
-    )
+        # Prepare data for Phase 2 (use full train set from earlier)
+        # No need to reload - we already have train_df_all
+        train_val_df_phase2 = train_df_all
 
-    # Create callbacks for Phase 2
-    cbs_phase2 = [
-        SaveModelCallback(
-            monitor='valid_loss',
-            min_delta=phase2_cfg.get('min_delta', 0.0001),
-            with_opt=True
-        ),
-        EarlyStoppingCallback(
-            monitor='valid_loss',
-            min_delta=phase2_cfg.get('min_delta', 0.001),
-            patience=phase2_cfg.get('early_stopping_patience', 5)
-        ),
-        #ShowGraphCallback()
-    ]
+        # Create DataLoaders with same consistent validation split
+        dls_phase2 = create_dataloaders(
+            train_val_df_phase2,
+            disease_labels,
+            batch_size=phase2_cfg['batch_size'],
+            valid_pct=data_cfg.get('valid_pct', 0.1),
+            seed=data_cfg['seed'],
+            val_image_indices=val_image_indices  # Use same validation as Phase 1
+        )
 
-    # Create new learner for Phase 2
-    learn_phase2 = create_fastai_learner(
-        dls_phase2,
-        num_classes=model_cfg['num_classes'],
-        cbs=cbs_phase2,
-        loss_type=phase2_cfg['loss'],
-        update_strategy=memory_cfg.get('update_strategy', 'rarity') if memory_cfg['use_memory'] else 'rarity',
-        bank_size=memory_cfg.get('bank_size', 512) if memory_cfg['use_memory'] else 0,
-        top_k=memory_cfg.get('top_k', 3),
-        normalize_retrieved=memory_cfg.get('normalize_retrieved', True),
-        rarity_threshold=memory_cfg.get('rarity_threshold', 0.2),
-        diversity_weight=memory_cfg.get('diversity_weight', 0.5),
-        momentum=phase2_cfg.get('memory_momentum', 0.9999),  # Higher momentum for Phase 2!
-        model_name=model_cfg['backbone'],
-        use_fp16=False
-    )
-    try:
-            learn_phase2.remove_cbs(ProgressCallback)
-    except:
-        pass
-    # Load Phase 1 weights if requested
-    if phase2_cfg.get('load_from_phase1', True):
-        checkpoint_name = phase2_cfg.get('phase1_checkpoint', phase1_save_name)
-        learn_phase2.load(checkpoint_name)
-        print(f"\nLoaded Phase 1 model: {checkpoint_name}")
+        # Create callbacks for Phase 2
+        cbs_phase2 = [
+            SaveModelCallback(
+                monitor='valid_loss',
+                min_delta=phase2_cfg.get('min_delta', 0.0001),
+                with_opt=True
+            ),
+            EarlyStoppingCallback(
+                monitor='valid_loss',
+                min_delta=phase2_cfg.get('min_delta', 0.001),
+                patience=phase2_cfg.get('early_stopping_patience', 5)
+            ),
+            #ShowGraphCallback()
+        ]
 
-    # Unfreeze and train with lower LR
-    learn_phase2.unfreeze()
+        # Create new learner for Phase 2
+        learn_phase2 = create_fastai_learner(
+            dls_phase2,
+            num_classes=model_cfg['num_classes'],
+            cbs=cbs_phase2,
+            loss_type=phase2_cfg['loss'],
+            update_strategy=memory_cfg.get('update_strategy', 'rarity') if memory_cfg['use_memory'] else 'rarity',
+            bank_size=memory_cfg.get('bank_size', 512) if memory_cfg['use_memory'] else 0,
+            top_k=memory_cfg.get('top_k', 3),
+            normalize_retrieved=memory_cfg.get('normalize_retrieved', True),
+            rarity_threshold=memory_cfg.get('rarity_threshold', 0.2),
+            diversity_weight=memory_cfg.get('diversity_weight', 0.5),
+            momentum=phase2_cfg.get('memory_momentum', 0.9999),  # Higher momentum for Phase 2!
+            model_name=model_cfg['backbone'],
+            use_fp16=False
+        )
+        try:
+                learn_phase2.remove_cbs(ProgressCallback)
+        except:
+            pass
+        # Load Phase 1 weights if requested
+        if phase2_cfg.get('load_from_phase1', True):
+            checkpoint_name = phase2_cfg.get('phase1_checkpoint', phase1_save_name)
+            learn_phase2.load(checkpoint_name)
+            print(f"\nLoaded Phase 1 model: {checkpoint_name}")
 
-    lr_min = phase2_cfg.get('lr_min', 2e-5)
-    lr_max = phase2_cfg.get('lr_max', 8e-5)
-    epochs = phase2_cfg.get('epochs', 5)
+        # Unfreeze and train with lower LR
+        learn_phase2.unfreeze()
 
-    print("\nStarting Phase 2 training...")
-    print(f"  Epochs: {epochs}")
-    print(f"  LR range: {lr_min} to {lr_max}")
-    print(f"  Memory momentum: {phase2_cfg.get('memory_momentum', 0.9999)}")
-    with learn_phase2.no_logging():
-        learn_phase2.fit_one_cycle(epochs, slice(lr_min, lr_max))
+        lr_min = phase2_cfg.get('lr_min', 2e-5)
+        lr_max = phase2_cfg.get('lr_max', 8e-5)
+        epochs = phase2_cfg.get('epochs', 5)
 
-    # Save Phase 2 model
-    phase2_save_name = phase2_cfg.get('save_name', 'phase2_model')
-    learn_phase2.save(phase2_save_name)
-    print(f"\nPhase 2 model saved as: {phase2_save_name}")
+        print("\nStarting Phase 2 training...")
+        print(f"  Epochs: {epochs}")
+        print(f"  LR range: {lr_min} to {lr_max}")
+        print(f"  Memory momentum: {phase2_cfg.get('memory_momentum', 0.9999)}")
+        with learn_phase2.no_logging():
+            learn_phase2.fit_one_cycle(epochs, slice(lr_min, lr_max))
+
+        # Save Phase 2 model
+        phase2_save_name = phase2_cfg.get('save_name', 'phase2_model')
+
+        # Only save final model if save_best is False
+        # If save_best=True, SaveModelCallback already saved the best model
+        if not phase2_cfg.get('save_best', True):
+            learn_phase2.save(phase2_save_name)
+            print(f"\nPhase 2 model saved as: {phase2_save_name}")
+        else:
+            print(f"\nPhase 2 best model already saved by SaveModelCallback as: {phase2_save_name}")
 
     # ========== EVALUATION ==========
     print("\n" + "="*60)
@@ -448,16 +466,30 @@ def main():
             'y_test': y_test
         }
 
-    # Evaluate final model
+    # Evaluate final model (use phase2 if available, else phase1)
+    # Load test data for evaluation
+    test_df_eval = prepare_chestxray14_dataframe(
+        data_cfg['data_dir'],
+        seed=data_cfg['seed'],
+        filter_normal=False  # Use all test images for evaluation
+    )[2]  # Get test_df only
+
     dls_test = create_dataloaders(
-        test_df_phase2,
+        test_df_eval,
         disease_labels,
         batch_size=eval_cfg.get('batch_size', 64),
         valid_pct=0.0,
         seed=data_cfg['seed']
     )
-    learn_phase2.dls = dls_test
-    results = get_roc_auc(learn_phase2, disease_labels)
+
+    # Use the final trained model (phase2 if 2-phase, else phase1)
+    if is_single_phase:
+        final_learner = learn
+    else:
+        final_learner = learn_phase2
+
+    final_learner.dls = dls_test
+    results = get_roc_auc(final_learner, disease_labels)
 
     # Save predictions if requested
     if eval_cfg.get('save_predictions', True):
