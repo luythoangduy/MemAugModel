@@ -13,6 +13,8 @@ import os
 import yaml
 
 from fastai.vision.all import *
+from fastai.callback.progress import ProgressCallback
+from fastai.callback.core import CSVLogger
 from data.fastai_data import prepare_chestxray14_dataframe, create_dataloaders, get_validation_split
 from training.fastai_learner import create_fastai_learner
 
@@ -154,6 +156,13 @@ def main():
         learn.load(model_path)
         print("Model loaded successfully!")
 
+        # Remove ProgressCallback to avoid display issues in evaluation mode
+        try:
+            learn.remove_cbs([ProgressCallback, CSVLogger])
+        except:
+            # In case callbacks are not present
+            pass
+
         # Run evaluation
         print("\n" + "="*60)
         print("RUNNING EVALUATION ON TEST SET")
@@ -162,7 +171,11 @@ def main():
         from sklearn.metrics import roc_auc_score
 
         learn.model.eval()
+
+        # Get predictions without progress bar
+        print("Running inference on test set...")
         preds, y_test = learn.get_preds(ds_idx=1)  # Get predictions on validation set (which is our test set)
+        print(f"Predictions shape: {preds.shape}")
 
         # Calculate metrics
         roc_auc = roc_auc_score(y_test, preds)
