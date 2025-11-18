@@ -51,6 +51,6 @@ phase1:
 # Evaluation
 # ========================================
 evaluation:
-  batch_size: 128
+  batch_size: 64
   num_workers: 4
   save_predictions: true

@@ -67,7 +67,7 @@ data:
   data_dir: /kaggle/input/data
   image_size: [224, 224]
   seed: 85
-  valid_pct: 0.125
+  valid_pct: 0.1
 
 # Phase 1: Abnormal images only
 phase1:
@@ -81,7 +81,7 @@ phase1:
 # Phase 2: All images
 phase2:
   filter_normal: false
-  batch_size: 128
+  batch_size: 64
   loss: bce
   epochs: 5
   lr_min: 0.00002
@@ -91,7 +91,7 @@ phase2:
 
 # Evaluation
 evaluation:
-  batch_size: 128
+  batch_size: 64
   save_predictions: true
 ```
 
