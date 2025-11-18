@@ -174,7 +174,7 @@ def create_fastai_learner(
     rarity_threshold=0.2,           # Rarity threshold for update
     diversity_weight=0.5,           # Diversity weight for hybrid strategy
     model_name='efficientnet_b0',   # Model architecture
-    use_fp16=True                   # Use mixed precision training
+    use_fp16=False                   # Use mixed precision training
 ):
     """
     Create a FastAI Learner for ChestXrayModel

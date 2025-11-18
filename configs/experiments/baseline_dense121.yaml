@@ -26,7 +26,7 @@ data:
   data_dir: /kaggle/input/data
   image_size: [224, 224]
   seed: 85
-  valid_pct: 0.125
+  valid_pct: 0.1
 
 # ========================================
 # Training Phase 1: Abnormal Images Only
