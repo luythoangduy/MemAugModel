@@ -146,7 +146,7 @@ def main():
             diversity_weight=memory_cfg.get('diversity_weight', 0.5),
             momentum=phase2_cfg.get('memory_momentum', 0.9999),
             model_name=model_cfg['backbone'],
-            use_fp16=True
+            use_fp16=False
         )
 
         # Load checkpoint
@@ -285,7 +285,7 @@ def main():
         diversity_weight=memory_cfg.get('diversity_weight', 0.5),
         momentum=phase1_cfg.get('memory_momentum', 0.9),
         model_name=model_cfg['backbone'],
-        use_fp16=True
+        use_fp16=False
     )
 
     # LR Finder
@@ -382,7 +382,7 @@ def main():
         diversity_weight=memory_cfg.get('diversity_weight', 0.5),
         momentum=phase2_cfg.get('memory_momentum', 0.9999),  # Higher momentum for Phase 2!
         model_name=model_cfg['backbone'],
-        use_fp16=True
+        use_fp16=False
     )
     try:
             learn_phase2.remove_cbs(ProgressCallback)

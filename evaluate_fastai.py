@@ -231,7 +231,7 @@ def main():
         update_strategy=exp_config['memory']['update_strategy'] if exp_config['memory']['use_memory'] else 'rarity',
         bank_size=exp_config['memory']['bank_size'] if exp_config['memory']['use_memory'] else 0,
         model_name=exp_config['backbone']['name'],
-        use_fp16=True
+        use_fp16=False
     )
 
     # Load model
