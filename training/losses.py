@@ -52,57 +52,51 @@ class FocalLoss(nn.Module):
 
 
 class AsymmetricLoss(nn.Module):
-    """
-    Asymmetric Loss (ASL) to handle class imbalance and hard negative mining
-
-    Reference: Ridnik et al. "Asymmetric Loss for Multi-Label Classification" (ICCV 2021)
-    Used in Phase 2 training as per the paper
-    """
-
-    def __init__(self, gamma_neg=4, gamma_pos=1, clip=0.05, eps=1e-8, reduction='mean'):
-        """
-        Args:
-            gamma_neg: Focusing parameter for negative samples
-            gamma_pos: Focusing parameter for positive samples
-            clip: Clip the predictions to prevent extreme values
-            eps: Small epsilon to prevent log(0)
-            reduction: 'mean', 'sum', or 'none'
-        """
+    def __init__(self, gamma_neg=4, gamma_pos=1, clip=0.05, eps=1e-8, disable_torch_grad_focal_loss=True):
         super(AsymmetricLoss, self).__init__()
+
         self.gamma_neg = gamma_neg
         self.gamma_pos = gamma_pos
         self.clip = clip
+        self.disable_torch_grad_focal_loss = disable_torch_grad_focal_loss
         self.eps = eps
-        self.reduction = reduction
 
     def forward(self, x, y):
+        """"
+        Parameters
+        ----------
+        x: input logits
+        y: targets (multi-label binarized vector)
         """
-        Args:
-            x: Model predictions (logits) [B, C]
-            y: Ground truth labels [B, C]
 
-        Returns:
-            loss: Computed loss
-        """
-        # Convert to probabilities
+        # Calculating Probabilities
         x_sigmoid = torch.sigmoid(x)
+        xs_pos = x_sigmoid
+        xs_neg = 1 - x_sigmoid
 
-        # Clip predictions to prevent extreme values
-        xs_min = x_sigmoid.clamp(min=self.eps)
-        xs_max = x_sigmoid.clamp(max=1 - self.eps)
+        # Asymmetric Clipping
+        if self.clip is not None and self.clip > 0:
+            xs_neg = (xs_neg + self.clip).clamp(max=1)
 
-        # Asymmetric term for positive and negative samples
-        loss_pos = -y * torch.log(xs_min) * torch.pow(1 - xs_min, self.gamma_pos)
-        loss_neg = -(1 - y) * torch.log(1 - xs_max) * torch.pow(xs_max, self.gamma_neg)
+        # Basic CE calculation
+        los_pos = y * torch.log(xs_pos.clamp(min=self.eps))
+        los_neg = (1 - y) * torch.log(xs_neg.clamp(min=self.eps))
+        loss = los_pos + los_neg
 
-        loss = loss_pos + loss_neg
+        # Asymmetric Focusing
+        if self.gamma_neg > 0 or self.gamma_pos > 0:
+            if self.disable_torch_grad_focal_loss:
+                torch.set_grad_enabled(False)
+            pt0 = xs_pos * y
+            pt1 = xs_neg * (1 - y)  # pt = p if t > 0 else 1-p
+            pt = pt0 + pt1
+            one_sided_gamma = self.gamma_pos * y + self.gamma_neg * (1 - y)
+            one_sided_w = torch.pow(1 - pt, one_sided_gamma)
+            if self.disable_torch_grad_focal_loss:
+                torch.set_grad_enabled(True)
+            loss *= one_sided_w
 
-        if self.reduction == 'mean':
-            return torch.mean(loss)
-        elif self.reduction == 'sum':
-            return torch.sum(loss)
-        else:
-            return loss
+        return -loss.sum()
 
 
 def get_loss_function(loss_name='bce', **kwargs):
