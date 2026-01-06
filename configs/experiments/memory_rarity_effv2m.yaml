@@ -62,7 +62,7 @@ phase2:
   filter_normal: false
   batch_size: 64  # Smaller batch for larger model
   num_workers: 4
-  loss: bce
+  loss: asymmetric
   epochs: 5
   lr_min: 0.00002
   lr_max: 0.00008

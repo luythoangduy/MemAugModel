@@ -82,7 +82,7 @@ phase1:
 phase2:
   filter_normal: false
   batch_size: 128
-  loss: bce
+  loss: asymmetric
   epochs: 5
   lr_min: 0.00002
   lr_max: 0.00008
