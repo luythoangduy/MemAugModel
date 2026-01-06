@@ -46,7 +46,7 @@ phase1:
   num_workers: 4
 
   # Training
-  loss: bce
+  loss: asymmetric
   freeze_epochs: 3
   total_epochs: 20
   use_lr_finder: true
@@ -77,7 +77,7 @@ phase2:
   num_workers: 4
 
   # Training
-  loss: bce  # Notebook uses BCE for both phases
+  loss: asymmetric  # Notebook uses BCE for both phases
   epochs: 5
   lr_min: 0.00002  # 2e-5
   lr_max: 0.00008  # 8e-5
