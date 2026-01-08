@@ -238,7 +238,7 @@ def main():
     print(f"Loading model from: {args.model_path}")
     learn.load(args.model_path)
     print("Model loaded successfully!")
-
+    learn.remove_cbs(ProgressCallback)
     # Evaluate
     print("\n" + "="*60)
     print("EVALUATION RESULTS")
