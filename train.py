@@ -71,7 +71,7 @@ def main():
         print(f"    - Top-k: {memory_cfg['top_k']}")
         print(f"    - Normalize retrieved: {memory_cfg.get('normalize_retrieved', True)}")
     print(f"  Loss Phase 1: {phase1_cfg['loss']}")
-    print(f"  Loss Phase 2: {phase2_cfg['loss']}")
+    print(f"  Loss Phase 2: {phase2_cfg.get('loss') if phase2_cfg else 'N/A'}")
     print()
 
     # ========== PHASE 1: Abnormal images only ==========
