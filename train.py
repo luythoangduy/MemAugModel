@@ -50,7 +50,7 @@ def main():
     memory_cfg = config['memory']
     data_cfg = config['data']
     phase1_cfg = config['phase1']
-    phase2_cfg = config['phase2']
+    phase2_cfg = config.get('phase2', None)
     eval_cfg = config['evaluation']
 
     # Set random seed
