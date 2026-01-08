@@ -42,7 +42,7 @@ phase1:
   filter_normal: false  # Train on all images
   batch_size: 128
   num_workers: 4
-  loss: assymmetric
+  loss: asymmetric
   freeze_epochs: 3
   total_epochs: 30  # Longer training since single phase
   use_lr_finder: true
